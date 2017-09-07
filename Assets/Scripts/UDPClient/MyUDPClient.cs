@@ -4,31 +4,33 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Assets.Scripts.FrameSync;
 using UnityEngine;
 
 namespace Assets.Scripts.UDPClient {
-    public class MyUDPClient : MonoBehaviour
-    {
+    public class MyUDPClient : MonoBehaviour{
+        private static IPAddress GroupAddress = IPAddress.Parse("192.168.1.12");
 
-        private static IPAddress GroupAddress = IPAddress.Parse("192.168.199.223");
-
-        private static int GroupPort = 21003;
+        private static int GroupPort = 20000;
+        private static int ListenPort = 11000;
         public static System.Action<string> OnNewDataReceived;
 
         private static UdpClient _client;
         private static string _receivedMsg;
 
+        private static Thread _recThread;
+
         /// <summary>
         /// 初始化时先创建新的
         /// </summary>
         public MyUDPClient() {
-            _client = new UdpClient();
-            Thread t = new Thread(ReciveMsg);
-            t.Start();
+            _client = new UdpClient(ListenPort);
+
         }
 
         public static void Send(string message)
         {
+            
             IPEndPoint groupEP = new IPEndPoint(GroupAddress, GroupPort);
 
             try
@@ -38,9 +40,8 @@ namespace Assets.Scripts.UDPClient {
                 byte[] bytes = Encoding.ASCII.GetBytes(message);
 
                 _client.Send(bytes, bytes.Length, groupEP);
-
-                _client.Close();
-
+                _recThread= new Thread(ReciveMsg);
+                _recThread.Start();
             }
             catch (System.Exception e)
             {
@@ -49,25 +50,24 @@ namespace Assets.Scripts.UDPClient {
 
         }
 
+        public static void SendMessage(ClientMsg data) {
+            Send(data.ToString());
+        }
 
         /// <summary>
         /// 接收发送给本机ip对应端口号的数据报
         /// </summary>
         static void ReciveMsg()
         {
-            IPEndPoint listenEndPoint = new IPEndPoint(IPAddress.Any, 0);
-            var listenClient = new UdpClient(listenEndPoint);
+            IPEndPoint listenEndPoint = new IPEndPoint(IPAddress.Any, ListenPort);
             while (true)
             {
                 UnityEngine.Debug.LogFormat("receive data................");
-                IPEndPoint point = new IPEndPoint(GroupAddress, GroupPort);//用来保存发送方的ip和端口号
-                byte[] buffer = listenClient.Receive(ref point);//接收数据报
+                byte[] buffer = _client.Receive(ref listenEndPoint);//接收数据报
+
+                UnityEngine.Debug.LogFormat("received from {0}, {1}", listenEndPoint.Address, listenEndPoint.Port);
                 _receivedMsg = System.Text.Encoding.Default.GetString( buffer );
             }
-        }
-
-        private static void ReceiveData(IAsyncResult ar) {
-            throw new NotImplementedException();
         }
 
         private void Update() {

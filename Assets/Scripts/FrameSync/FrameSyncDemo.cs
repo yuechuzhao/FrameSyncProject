@@ -1,4 +1,5 @@
-﻿using Client.Library.Entity;
+﻿using Assets.Scripts.UDPClient;
+using Client.Library.Entity;
 using UnityEngine;
 
 namespace Assets.Scripts.FrameSync {
@@ -17,8 +18,7 @@ namespace Assets.Scripts.FrameSync {
         private void CreateSelf() {
             var go = GameObject.Instantiate(Resources.Load<GameObject>("Unit"));
             go.SetActive(false);
-            var unit = EntityBase.Create<Unit>(go, EntityPool.Instance);
-            unit.IsPlayer = true;
+            var unit = EntityBase.Create<Unit>(go, EntityPool.Instance, true);
         }
 
         private void Init() {
@@ -27,6 +27,10 @@ namespace Assets.Scripts.FrameSync {
 
             var panelRoot = GameObject.Find("UICanvas/ButtonPanel");
             EntityBase.Create<UIController>(panelRoot.gameObject, EntityPool.Instance);
+            
+            go = new GameObject(typeof(MyUDPClient).Name);
+            go.AddComponent<MyUDPClient>();
+            new FrameProcessor(EntityPool.Instance);
         }
     }
 }

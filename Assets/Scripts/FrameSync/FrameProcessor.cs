@@ -17,6 +17,14 @@ namespace Assets.Scripts.FrameSync {
                 Message = EntityConsts.Message.PLAY_OPERATION,
                 ReceiverTypes = new []{EntityConsts.EntityType.FrameController}
             });
+            
+            AddMessageDispatchRule(new MessageDispatchRule() {
+                SenderType = EntityConsts.EntityType.FrameController,
+                Message = EntityConsts.Message.ACTIVATE_SELF,
+                ReceiverTypes = new []{EntityConsts.EntityType.Player}
+            });
+            
+            
         }
     }
 }

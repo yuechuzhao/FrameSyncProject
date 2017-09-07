@@ -10,6 +10,8 @@
         public static class Message {
             public static string UNIT_CREATED = "UNIT_CREATED";
             public static string PLAY_OPERATION = "PLAY_OPERATION";
+            public static string ACTIVATE_SELF = "ACTIVATE_SELF";
+            public static string CREATE_UNIT = "CREATE_UNIT";
         }
     }
 }
