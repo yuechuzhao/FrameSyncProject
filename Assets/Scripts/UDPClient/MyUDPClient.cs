@@ -6,11 +6,11 @@ using Assets.Scripts.FrameSync;
 using UnityEngine;
 
 namespace Assets.Scripts.UDPClient {
-    public class MyUDPClient : MonoBehaviour{
-        private static IPAddress GroupAddress = IPAddress.Parse(UDPSetting.ServerIP);
+    public class MyUDPClient : MonoBehaviour {
+        private static IPAddress GroupAddress;
 
-        private static int GroupPort = UDPSetting.ServerPort;
-        private static int ListenPort = UDPSetting.LocalPort;
+        private static int GroupPort;
+        private static int ListenPort;
         public static System.Action<string> OnNewDataReceived;
 
         private static UdpClient _client;
@@ -73,6 +73,12 @@ namespace Assets.Scripts.UDPClient {
                 OnNewDataReceived(_receivedMsg);
                 _receivedMsg = null;
             }
+        }
+
+        private void OnAwake() {
+            GroupAddress = IPAddress.Parse(UDPSetting.ServerIP);
+            GroupPort = UDPSetting.ServerPort;
+            ListenPort = UDPSetting.LocalPort;
         }
 
         void OnDestroy() {
