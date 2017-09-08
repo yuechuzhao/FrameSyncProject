@@ -1,6 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -9,10 +7,10 @@ using UnityEngine;
 
 namespace Assets.Scripts.UDPClient {
     public class MyUDPClient : MonoBehaviour{
-        private static IPAddress GroupAddress = IPAddress.Parse("192.168.1.12");
+        private static IPAddress GroupAddress = IPAddress.Parse(UDPSetting.ServerIP);
 
-        private static int GroupPort = 20000;
-        private static int ListenPort = 11000;
+        private static int GroupPort = UDPSetting.ServerPort;
+        private static int ListenPort = UDPSetting.LocalPort;
         public static System.Action<string> OnNewDataReceived;
 
         private static UdpClient _client;
