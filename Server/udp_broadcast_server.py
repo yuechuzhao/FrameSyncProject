@@ -31,6 +31,7 @@ class ClientSyncData:
         self.Guid = params[1]
         self.OperationCode = int(params[2])
         self.OperationInfoStr = params[3]
+        print(params)
 
     # FrameId = int.Parse(array[0]),
     # Guid = array[1],
@@ -73,6 +74,7 @@ class TimeHandler(BaseRequestHandler):
         self.send_id += 1
         data.FrameId += 1
         data.SendId = self.send_id
+        print("deal msg, operationInfoStr ", data.OperationInfoStr)
         if data.OperationCode == 1:
             self.unit_id += 1
             data.OperationInfoStr = str(self.unit_id)

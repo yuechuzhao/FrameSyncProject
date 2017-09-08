@@ -26,6 +26,7 @@ namespace Assets.Scripts.FrameSync {
 
         protected override void OnCreate(object param = null) {
             _guid = System.Guid.NewGuid().ToString();
+            Debug.LogFormat("guid is {0}", _guid);
             MyUDPClient.OnNewDataReceived += OnNewDataReceived;
         }
 
@@ -36,6 +37,7 @@ namespace Assets.Scripts.FrameSync {
         private void SendPlayerOperation(Hashtable obj) {
             string operation = (string) obj["operation"];
             operation = operation.ParseToProtoString();
+            //Debug.LogFormat("SendPlayerOperation, {0}", operation);
             var msg = new UnitMoveMsg {OperationInfo = operation};
             SendOperation(msg);
         }
@@ -59,7 +61,7 @@ namespace Assets.Scripts.FrameSync {
         }
 
         private void ExecuteMsg(ClientMsg msg) {
-            Debug.LogFormat("msg is {0}, guid {1}", msg.OperationCode, msg.Guid);
+            //Debug.LogFormat("msg is {0}, guid {1}", msg.OperationCode, msg.Guid);
             switch (msg.OperationCode){
                 case ClientMsg.CREATION:
                     bool isMe = msg.Guid == _guid;
@@ -71,7 +73,7 @@ namespace Assets.Scripts.FrameSync {
                     break;
                 case ClientMsg.MOVE:
                     Send(EntityConsts.Message.UNIT_MOVE, new Hashtable() {
-                        {"action", Enum.Parse(typeof(EMoveActionType), msg.OperationInfoStr)},
+                        {"action", msg.OperationInfoStr},
                         {"guid", msg.Guid},
                     });
                     break;

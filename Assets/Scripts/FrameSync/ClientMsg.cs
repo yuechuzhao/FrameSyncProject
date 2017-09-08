@@ -26,7 +26,7 @@ namespace Assets.Scripts.FrameSync
         }
 
         protected virtual string InfoToString(object info){
-            return "";
+            return info == null ? "" : info.ToString();
         }
 
         public virtual object ParseInfo() {
@@ -66,31 +66,16 @@ namespace Assets.Scripts.FrameSync
     }
 
     public enum EMoveActionType {
-        Forward,
-        Back,
-        Left,
-        Right,
+        Forward = 1,
+        Back = 2,
+        Left = 3,
+        Right = 4,
     }
 
     public static class UnitMoveInfo {
 
         public static string ParseToProtoString(this string actionString) {
-            EMoveActionType actionType = default(EMoveActionType);
-            switch (actionString) {
-                case "Forward":
-                    actionType = EMoveActionType.Forward;
-                    break;
-                case "Back":
-                    actionType = EMoveActionType.Back;
-                    break;
-                case "Left":
-                    actionType = EMoveActionType.Left;
-                    break;
-                case "Right":
-                    actionType = EMoveActionType.Right;
-                    break;
-            }
-            return actionType.ToString();
+            return actionString.ToString();
         }
     }
 

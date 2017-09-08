@@ -24,6 +24,12 @@ namespace Assets.Scripts.FrameSync {
                 ReceiverTypes = new []{EntityConsts.EntityType.UnitManager}
             });
             
+            AddMessageDispatchRule(new MessageDispatchRule() {
+                SenderType = EntityConsts.EntityType.FrameController,
+                Message = EntityConsts.Message.UNIT_MOVE,
+                ReceiverTypes = new []{EntityConsts.EntityType.Unit}
+            });
+            
             
         }
     }

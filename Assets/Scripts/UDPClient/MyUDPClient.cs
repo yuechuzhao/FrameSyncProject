@@ -33,7 +33,7 @@ namespace Assets.Scripts.UDPClient {
 
             try
             {
-                UnityEngine.Debug.LogFormat("Sending datagram : {0}", message);
+                //UnityEngine.Debug.LogFormat("Sending datagram : {0}", message);
 
                 byte[] bytes = Encoding.ASCII.GetBytes(message);
 
@@ -60,10 +60,9 @@ namespace Assets.Scripts.UDPClient {
             IPEndPoint listenEndPoint = new IPEndPoint(IPAddress.Any, ListenPort);
             while (true)
             {
-                UnityEngine.Debug.LogFormat("receive data................");
                 byte[] buffer = _client.Receive(ref listenEndPoint);//接收数据报
 
-                UnityEngine.Debug.LogFormat("received from {0}, {1}", listenEndPoint.Address, listenEndPoint.Port);
+                //UnityEngine.Debug.LogFormat("received from {0}, {1}", listenEndPoint.Address, listenEndPoint.Port);
                 _receivedMsg = System.Text.Encoding.Default.GetString( buffer );
             }
         }
