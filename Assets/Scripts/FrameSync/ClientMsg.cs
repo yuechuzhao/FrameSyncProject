@@ -7,6 +7,9 @@ namespace Assets.Scripts.FrameSync
         public const int CREATION = 1;
         public const int MOVE = 2;
 
+        public const char FIRST_SPLITER = '|';
+        public const char SECOND_SPLITER = ';';
+
         public int FrameId;//逻辑上第几帧
         public string Guid;//必须有guid，用来标识本机
         public int OperationCode;
@@ -19,7 +22,7 @@ namespace Assets.Scripts.FrameSync
         }
 
         public override string ToString() {
-            return string.Join("|", new []{
+            return string.Join(SECOND_SPLITER.ToString(), new []{
                 FrameId.ToString(),
                 Guid, OperationCode.ToString(),
                 InfoToString(OperationInfo)});
@@ -35,7 +38,7 @@ namespace Assets.Scripts.FrameSync
 
         public static ClientMsg ParseFrom(string source)
         {
-            string[] array = source.Split('|');
+            string[] array = source.Split(SECOND_SPLITER);
             ClientMsg data = new ClientMsg(){
                 FrameId = int.Parse(array[0]),
                 Guid = array[1],

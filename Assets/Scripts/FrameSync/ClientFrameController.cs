@@ -56,8 +56,11 @@ namespace Assets.Scripts.FrameSync {
         }
 
         private void OnNewDataReceived(string obj) {
-            var syncData = ClientMsg.ParseFrom(obj);
-            ReceiveSyncData(syncData);
+            string[] msgs = obj.Split(ClientMsg.FIRST_SPLITER);
+            for (int seqIndex = 0; seqIndex < msgs.Length; seqIndex++) {
+                var syncData = ClientMsg.ParseFrom(msgs[seqIndex]);
+                ReceiveSyncData(syncData);
+            }
         }
 
         private void ExecuteMsg(ClientMsg msg) {
