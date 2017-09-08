@@ -5,7 +5,7 @@ namespace Assets.Scripts.FrameSync
     public class ClientMsg
     {
         public const int CREATION = 1;
-
+        public const int MOVE = 2;
 
         public int FrameId;//逻辑上第几帧
         public string Guid;//必须有guid，用来标识本机
@@ -30,7 +30,7 @@ namespace Assets.Scripts.FrameSync
         }
 
         public virtual object ParseInfo() {
-            return null;
+            return OperationInfo.ToString();
         }
 
         public static ClientMsg ParseFrom(string source)
@@ -62,6 +62,42 @@ namespace Assets.Scripts.FrameSync
 
         public override object ParseInfo() {
             return OperationInfoStr.ToString();//转换成uuid
+        }
+    }
+
+    public enum EMoveActionType {
+        Forward,
+        Back,
+        Left,
+        Right,
+    }
+
+    public static class UnitMoveInfo {
+
+        public static string ParseToProtoString(this string actionString) {
+            EMoveActionType actionType = default(EMoveActionType);
+            switch (actionString) {
+                case "Forward":
+                    actionType = EMoveActionType.Forward;
+                    break;
+                case "Back":
+                    actionType = EMoveActionType.Back;
+                    break;
+                case "Left":
+                    actionType = EMoveActionType.Left;
+                    break;
+                case "Right":
+                    actionType = EMoveActionType.Right;
+                    break;
+            }
+            return actionType.ToString();
+        }
+    }
+
+    public class UnitMoveMsg : ClientMsg {
+        public UnitMoveMsg() : base()
+        {
+            OperationCode = MOVE;
         }
     }
     

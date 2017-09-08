@@ -74,7 +74,10 @@ namespace Assets.Scripts.UDPClient {
                 OnNewDataReceived(_receivedMsg);
                 _receivedMsg = null;
             }
+        }
 
+        void OnDestroy() {
+            _client.Close();
         }
     }
 }

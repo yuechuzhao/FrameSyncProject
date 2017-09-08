@@ -11,14 +11,14 @@ namespace Assets.Scripts.FrameSync {
 
         private void OnGUI() {
             if (GUI.Button(new Rect(0, 0, 120, 30), "开始游戏")) {
-                CreateSelf();
+                StartGame();
             }
         }
 
-        private void CreateSelf() {
-            var go = GameObject.Instantiate(Resources.Load<GameObject>("Unit"));
-            go.SetActive(false);
-            var unit = EntityBase.Create<Unit>(go, EntityPool.Instance, true);
+        private void StartGame() {
+
+            var go = new GameObject(typeof(UnitManager).Name);
+            EntityBase.Create<UnitManager>(go, EntityPool.Instance);
         }
 
         private void Init() {

@@ -39,6 +39,7 @@ public class ServerSettingWindow : EditorWindow {
             UDPSetting.ServerPort = _serverPort;
             UDPSetting.LocalPort = _localPort;
         }
+        GUILayout.EndHorizontal();
     }
 
 }

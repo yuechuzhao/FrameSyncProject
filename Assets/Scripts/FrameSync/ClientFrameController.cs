@@ -1,14 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Assets.Scripts.UDPClient;
 using Client.Library.Entity;
 using UnityEngine;
 
 namespace Assets.Scripts.FrameSync {
-    public static class FrameSyncOperation {
-        public const int UNIT_CREATE = 1;
-    }
-
     public class ClientFrameController : EntityBase {
 
         public const float SYNC_MS = 100;
@@ -23,7 +20,8 @@ namespace Assets.Scripts.FrameSync {
         }
 
         protected override void RegisterReceiveActions() {
-            SubcribeAction(EntityConsts.Message.UNIT_CREATED, SendUnityCreated);
+            SubcribeAction(EntityConsts.Message.JOIN_GAME, SendUnityCreated);
+            SubcribeAction(EntityConsts.Message.PLAY_OPERATION, SendPlayerOperation);
         }
 
         protected override void OnCreate(object param = null) {
@@ -35,10 +33,17 @@ namespace Assets.Scripts.FrameSync {
             MyUDPClient.OnNewDataReceived -= OnNewDataReceived;
         }
 
+        private void SendPlayerOperation(Hashtable obj) {
+            string operation = (string) obj["operation"];
+            operation = operation.ParseToProtoString();
+            var msg = new UnitMoveMsg {OperationInfo = operation};
+            SendOperation(msg);
+        }
+
         private void ReceiveSyncData(ClientMsg msg) {
             bool alreadyReceived = false;
             for (int index = 0; index < _msgs.Count; index++) {
-                if (_msgs[index].FrameId != msg.FrameId) continue;
+                if (_msgs[index].SendId != msg.SendId) continue;
                 alreadyReceived = true;
                 break;
             }
@@ -50,23 +55,25 @@ namespace Assets.Scripts.FrameSync {
 
         private void OnNewDataReceived(string obj) {
             var syncData = ClientMsg.ParseFrom(obj);
-            ExecuteMsg(syncData);
+            ReceiveSyncData(syncData);
         }
 
         private void ExecuteMsg(ClientMsg msg) {
             Debug.LogFormat("msg is {0}, guid {1}", msg.OperationCode, msg.Guid);
             switch (msg.OperationCode){
                 case ClientMsg.CREATION:
-                    if (msg.Guid == _guid) {
-                        Send(EntityConsts.Message.ACTIVATE_SELF, new Hashtable() {
-                            {"unitId", int.Parse(msg.OperationInfoStr)}
-                        });
-                    }
-                    else {
-                        Send(EntityConsts.Message.CREATE_UNIT, new Hashtable() {
-                            {"guid", msg.Guid}
-                        });
-                    }
+                    bool isMe = msg.Guid == _guid;
+                    Send(EntityConsts.Message.CREATE_UNIT, new Hashtable() {
+                        {"unitId", int.Parse(msg.OperationInfoStr)},
+                        {"guid", msg.Guid},
+                        {"isMe", isMe}
+                    });
+                    break;
+                case ClientMsg.MOVE:
+                    Send(EntityConsts.Message.UNIT_MOVE, new Hashtable() {
+                        {"action", Enum.Parse(typeof(EMoveActionType), msg.OperationInfoStr)},
+                        {"guid", msg.Guid},
+                    });
                     break;
                 default:
                     break;
@@ -98,8 +105,9 @@ namespace Assets.Scripts.FrameSync {
         private void ExecuteOperations() {
             for (int index = _msgs.Count - 1; index >= 0; index--) {
                 var msg = _msgs[index];
-                if (msg.FrameId == _currentFrame) {
+                if (msg.FrameId <= _currentFrame) {
                     ExecuteMsg(msg);
+                    _msgs.Remove(msg);
                 }
             }
         }

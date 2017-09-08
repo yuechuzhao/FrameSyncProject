@@ -7,8 +7,8 @@ namespace Assets.Scripts.FrameSync {
 
         protected override void InitMessageDispatchRules() {
             AddMessageDispatchRule(new MessageDispatchRule() {
-                SenderType = EntityConsts.EntityType.Player,
-                Message = EntityConsts.Message.UNIT_CREATED,
+                SenderType = EntityConsts.EntityType.UnitManager,
+                Message = EntityConsts.Message.JOIN_GAME,
                 ReceiverTypes = new []{EntityConsts.EntityType.FrameController}
             });
 
@@ -20,8 +20,8 @@ namespace Assets.Scripts.FrameSync {
             
             AddMessageDispatchRule(new MessageDispatchRule() {
                 SenderType = EntityConsts.EntityType.FrameController,
-                Message = EntityConsts.Message.ACTIVATE_SELF,
-                ReceiverTypes = new []{EntityConsts.EntityType.Player}
+                Message = EntityConsts.Message.CREATE_UNIT,
+                ReceiverTypes = new []{EntityConsts.EntityType.UnitManager}
             });
             
             
