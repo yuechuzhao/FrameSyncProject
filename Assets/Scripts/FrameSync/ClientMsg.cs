@@ -2,8 +2,8 @@
 namespace Assets.Scripts.FrameSync
 {
 
-    public class ClientMsg
-    {
+    public class ClientMsg {
+        public const int HEART = 0;//心跳
         public const int CREATION = 1;
         public const int MOVE = 2;
 
@@ -79,6 +79,13 @@ namespace Assets.Scripts.FrameSync
 
         public static string ParseToProtoString(this string actionString) {
             return actionString.ToString();
+        }
+    }
+
+    public class UnitHeartMsg : ClientMsg {
+        public UnitHeartMsg() : base()
+        {
+            OperationCode = HEART;
         }
     }
 

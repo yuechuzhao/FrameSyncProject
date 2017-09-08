@@ -5,10 +5,89 @@ class UnitClient:
     def __init__(self, guid, addr):
         self.guid = guid
         self.address = addr
+        self.msg_datas = []
+
+    def record_msg(self, msg_data):
+        self.msg_datas.append(msg_data)
+
+
+class AppConst:
+    HEART = 0
+    CREATE = 1
+    MOVE = 2
+
+    FIRST_SPLIT = "|"
+    SECOND_SPLIT = ";"
+    THIRD_SPLIT = ","
+
+    FuncMapping = {
+        HEART: "on_heart_beat",
+        CREATE: "on_create",
+        MOVE: "on_move"
+    }
 
 
 class QueueManager:
     send_id = 0
+
+
+class BattleManager:
+    battle_id = 0
+    is_in_battle = False
+    is_in_prepare = False
+    # 开始计时的时间
+    start_time_count = 10
+
+    def __init__(self):
+        self.create_msgs = []
+
+    # 开始游戏
+    def start(self):
+        if self.is_in_battle:
+            return
+        self.is_in_battle = True
+        self.create_msgs.clear()
+        client_manager.clear()
+        # 倒计时
+
+    def dispatch_receive_data(self, msg_data, send_func):
+        # TODO 战中状态不能再添加新的角色了
+        # TODO 准备状态不接受除添加新角色的任何消息
+
+        # 处理一下data
+        queue_manager.send_id += 1
+        msg_data.SendId = queue_manager.send_id
+        deal_func = getattr(self, AppConst.FuncMapping[msg_data.OperationCode])
+        if not deal_func:
+            return
+        deal_func(msg_data, send_func)
+
+    # TODO 心跳，如果连续不发送心跳的话就当做掉线
+    def on_heart_beat(self, data, send_func):
+        pass
+
+    # 创建时，发给发送者：创建成功，以及当前所有其他玩家创建
+    # 发给其他玩家：本角色创建成功
+    def on_create(self, data, send_func):
+        data.OperationInfoStr = str(client_manager.unit_id)
+        sender = client_manager.get_client(data.Guid)
+        self.create_msgs.append(data)
+        send_func(sender.address, self.create_msgs)
+
+        def send_to_client(client):
+            if client.guid == data.Guid:
+                return
+            send_func(client.address, [data])
+
+        client_manager.broadcast_to_clients(send_to_client)
+
+    def on_move(self, data, send_func):
+        self.send_all(data, send_func)
+
+    def send_all(self, data, send_func):
+        def send_to_client(client):
+            send_func(client.address, [data])
+        client_manager.broadcast_to_clients(send_to_client)
 
 
 class ClientManager:
@@ -21,6 +100,7 @@ class ClientManager:
             client = UnitClient(guid, addr)
             self.clients[guid] = client
             self.unit_id += 1
+        return client
 
     def get_client(self, guid):
         for client_guid, client in self.clients.items():
@@ -35,21 +115,21 @@ class ClientManager:
 
     def broadcast_to_clients(self, broadcast_func):
         for client in self.clients.values():
-            broadcast_func(client.address)
+            broadcast_func(client)
+
+    # 清空所有的客户端
+    def clear(self):
+        self.clients.clear()
 
 
+battle_manager = BattleManager()
 queue_manager = QueueManager()
 client_manager = ClientManager()
 
-second_spliter = ";"
-first_spliter = "|"
-
 
 class ClientSyncData:
-    SendId = 0
-
     def __init__(self, msg_str):
-        params = msg_str.split(second_spliter)
+        params = msg_str.split(AppConst.SECOND_SPLIT)
         self.FrameId = int(params[0])
         self.Guid = params[1]
         self.OperationCode = int(params[2])
@@ -62,9 +142,9 @@ class ClientSyncData:
     # SendId = int.Parse(array[3]),
     # OperationInfoStr = array[4]
     def parse(self):
-        return second_spliter.join([str(self.FrameId), self.Guid,
-                         str(self.OperationCode), str(self.SendId),
-                         self.OperationInfoStr])
+        return AppConst.SECOND_SPLIT.join([str(self.FrameId), self.Guid,
+                                           str(self.OperationCode), str(self.SendId),
+                                           self.OperationInfoStr])
 
 
 class TimeHandler(BaseRequestHandler):
@@ -83,38 +163,30 @@ class TimeHandler(BaseRequestHandler):
         print('client msg', msg.decode("ascii"))
         data = ClientSyncData(msg.decode("ascii"))
 
-        if not client_manager.get_client(data.Guid):
-            client_manager.add_client(data.Guid, self.client_address)
+        sender = client_manager.get_client(data.Guid)
+        if not sender:
+            sender = client_manager.add_client(data.Guid, self.client_address)
 
-        send_msgs = self.deal_msg_data(data)
+        # 转发给battlemanager处理
 
-        def send_func(addr):
-            send_msg = first_spliter.join(send_msgs)
+        def send_func(address, datas):
+            send_msg = AppConst.FIRST_SPLIT.join([m.parse() for m in datas])
             send_msg = send_msg.encode()
             print("send msg", send_msg)
-            sock.sendto(send_msg, addr)
+            sock.sendto(send_msg, address)
 
-        client_manager.broadcast_to_clients(send_func)
+        battle_manager.dispatch_receive_data(data, send_func)
+
+        # # 如果没有需要发的，就什么都不发
+        # if len(msg_datas) == 0:
+        #     return
+        # client_manager.broadcast_to_clients(send_func)
 
         #for address in all_clients:
         #    for send_msg in send_msgs:
         #        send_msg = send_msg.encode()
         #        print("send msg", send_msg)
         #        sock.sendto(send_msg, address)
-
-    def deal_msg_data(self, data):
-        queue_manager.send_id += 1
-        data.SendId = queue_manager.send_id
-        print("deal msg, operationInfoStr ", data.OperationInfoStr, "send_id", self.send_id)
-        if data.OperationCode == 1:
-            data.OperationInfoStr = str(client_manager.unit_id)
-            self.create_msgs.append(data.parse())
-            print("new creation", len(self.create_msgs))
-            return self.create_msgs
-        if data.OperationCode == 2:
-            pass
-
-        return [data.parse()]
 
 
 if __name__ == '__main__':
