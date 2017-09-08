@@ -75,7 +75,7 @@ namespace Assets.Scripts.UDPClient {
             }
         }
 
-        private void OnAwake() {
+        private void Awake() {
             GroupAddress = IPAddress.Parse(UDPSetting.ServerIP);
             GroupPort = UDPSetting.ServerPort;
             ListenPort = UDPSetting.LocalPort;

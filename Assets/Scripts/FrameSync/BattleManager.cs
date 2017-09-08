@@ -1,4 +1,5 @@
-﻿using Assets.Scripts.UDPClient;
+﻿using System.Collections;
+using Assets.Scripts.UDPClient;
 using Client.Library.Entity;
 using UnityEngine;
 
@@ -10,6 +11,11 @@ namespace Assets.Scripts.FrameSync {
         }
 
         public void StartGame() {
+            StartCoroutine(CreateUnitManager());
+        }
+
+        private IEnumerator CreateUnitManager() {
+            yield return null;//等待udpclient?
             var go = new GameObject(typeof(UnitManager).Name);
             EntityBase.Create<UnitManager>(go, EntityPool.Instance);
         }
