@@ -1,4 +1,6 @@
 from socketserver import BaseRequestHandler, UDPServer
+from time import ctime, sleep
+import threading
 
 
 class UnitClient:
@@ -12,7 +14,8 @@ class UnitClient:
 
 
 class AppConst:
-    HEART = 0
+    HEART = -1
+    SERVER_FRAME = 0
     CREATE = 1
     MOVE = 2
 
@@ -23,12 +26,29 @@ class AppConst:
     FuncMapping = {
         HEART: "on_heart_beat",
         CREATE: "on_create",
-        MOVE: "on_move"
+        MOVE: "on_move",
+        SERVER_FRAME: "on_request_frame"
     }
 
 
 class QueueManager:
     send_id = 0
+
+
+# 帧控制器，在这里控制逻辑帧的步进
+class FrameManager:
+    # 每66毫秒逻辑帧前进一帧
+    FRAME_MS = 66
+    current_frame = 0
+
+    def step_frame(self):
+        while True:
+            sleep(self.FRAME_MS / 1000)
+            self.current_frame += 1
+
+    def start_step(self):
+        t = threading.Thread(target=self.step_frame)
+        t.start()
 
 
 class BattleManager:
@@ -89,6 +109,10 @@ class BattleManager:
             send_func(client.address, [data])
         client_manager.broadcast_to_clients(send_to_client)
 
+    def on_request_frame(self, data, send_func):
+        sender = client_manager.get_client(data.Guid)
+        send_func(sender.address, [data])
+
 
 class ClientManager:
     clients = {}
@@ -122,18 +146,13 @@ class ClientManager:
         self.clients.clear()
 
 
-battle_manager = BattleManager()
-queue_manager = QueueManager()
-client_manager = ClientManager()
-
-
 class ClientSyncData:
     def __init__(self, msg_str):
         params = msg_str.split(AppConst.SECOND_SPLIT)
-        self.FrameId = int(params[0])
-        self.Guid = params[1]
-        self.OperationCode = int(params[2])
-        self.OperationInfoStr = params[3]
+        self.Guid = params[0]
+        self.OperationCode = int(params[1])
+        self.OperationInfoStr = params[2]
+        self.FrameId = frame_manager.current_frame
         print(params)
 
     # FrameId = int.Parse(array[0]),
@@ -188,9 +207,14 @@ class TimeHandler(BaseRequestHandler):
         #        print("send msg", send_msg)
         #        sock.sendto(send_msg, address)
 
+battle_manager = BattleManager()
+queue_manager = QueueManager()
+client_manager = ClientManager()
+frame_manager = FrameManager()
 
 if __name__ == '__main__':
     from socketserver import ThreadingUDPServer
 
+    frame_manager.start_step()
     server = ThreadingUDPServer(('', 20000), TimeHandler)
     server.serve_forever()

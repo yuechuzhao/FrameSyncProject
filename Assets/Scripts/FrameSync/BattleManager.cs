@@ -16,17 +16,17 @@ namespace Assets.Scripts.FrameSync {
 
         private IEnumerator CreateUnitManager() {
             yield return null;//等待udpclient?
-            var go = new GameObject(typeof(UnitManager).Name);
+            
+            // 先同步当前服务器的帧
+            var go = new GameObject(typeof(ClientFrameController).Name);
+            EntityBase.Create<ClientFrameController>(go, EntityPool.Instance);
+
+            go = new GameObject(typeof(UnitManager).Name);
             EntityBase.Create<UnitManager>(go, EntityPool.Instance);
         }
 
         private void Init() {
-
-
-            var go = new GameObject(typeof(ClientFrameController).Name);
-            EntityBase.Create<ClientFrameController>(go, EntityPool.Instance);
-
-            var panelRoot = Instantiate(Resources.Load<GameObject>("InputPanel"), Launcher.UIRoot, false);
+            var panelRoot = Instantiate(Resources.Load<GameObject>("BattlePanel"), Launcher.UIRoot, false);
             EntityBase.Create<UIController>(panelRoot.gameObject, EntityPool.Instance);
             
 

@@ -3,7 +3,8 @@ namespace Assets.Scripts.FrameSync
 {
 
     public class ClientMsg {
-        public const int HEART = 0;//心跳
+        public const int HEART = -1;//心跳
+        public const int SERVER_FRAME = 0;// 同步服务器端逻辑帧
         public const int CREATION = 1;
         public const int MOVE = 2;
 
@@ -17,14 +18,14 @@ namespace Assets.Scripts.FrameSync
         public string OperationInfoStr;// 字符串
         public object OperationInfo;//其他操作信息，可以自定义序列化
 
-        protected ClientMsg()
-        {
+        protected ClientMsg() {
         }
 
         public override string ToString() {
+            // 不需要传送当前处于哪一帧
             return string.Join(SECOND_SPLITER.ToString(), new []{
-                FrameId.ToString(),
-                Guid, OperationCode.ToString(),
+                Guid, 
+                OperationCode.ToString(),
                 InfoToString(OperationInfo)});
         }
 
@@ -82,9 +83,14 @@ namespace Assets.Scripts.FrameSync
         }
     }
 
-    public class UnitHeartMsg : ClientMsg {
-        public UnitHeartMsg() : base()
-        {
+    public class RequestServerFrameMsg : ClientMsg {
+        public RequestServerFrameMsg() : base() {
+            OperationCode = SERVER_FRAME;
+        }
+    }
+
+    public class HeartBeatMsg : ClientMsg {
+        public HeartBeatMsg() : base() {
             OperationCode = HEART;
         }
     }

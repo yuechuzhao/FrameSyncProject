@@ -8,12 +8,15 @@ using UnityEngine;
 namespace Assets.Scripts.FrameSync {
     public class ClientFrameController : EntityBase {
 
-        public const float SYNC_MS = 100;
+        public const float SYNC_MS = 66;//固定帧，每66毫秒前进一帧
         private float _elapsedTime = 0;
         private int _currentFrame = 0;
         private string _guid;//用来标识本机
+
+        private List<ClientMsg> _msgs;
         
-        private List<ClientMsg> _msgs = new List<ClientMsg>();
+        private readonly Dictionary<int, System.Action<ClientMsg>> _serverCallbacks = 
+            new Dictionary<int, Action<ClientMsg>>() { };
 
         protected override int ThisType {
             get { return EntityConsts.EntityType.FrameController; }
@@ -25,13 +28,24 @@ namespace Assets.Scripts.FrameSync {
         }
 
         protected override void OnCreate(object param = null) {
+            MyUDPClient.OnNewDataReceived += OnNewDataReceived;
             _guid = System.Guid.NewGuid().ToString();
             Debug.LogFormat("guid is {0}", _guid);
-            MyUDPClient.OnNewDataReceived += OnNewDataReceived;
+            
+            // 
+            InitDataStructures();
+            RequestServerFrame();
         }
+
+
 
         protected override void OnRemove() {
             MyUDPClient.OnNewDataReceived -= OnNewDataReceived;
+        }
+        
+        private void RequestServerFrame() {
+            var msg = new RequestServerFrameMsg() {};
+            SendClientMsg(msg);
         }
 
         private void SendPlayerOperation(Hashtable obj) {
@@ -39,10 +53,14 @@ namespace Assets.Scripts.FrameSync {
             operation = operation.ParseToProtoString();
             //Debug.LogFormat("SendPlayerOperation, {0}", operation);
             var msg = new UnitMoveMsg {OperationInfo = operation};
-            SendOperation(msg);
+            SendClientMsg(msg);
         }
 
         private void ReceiveSyncData(ClientMsg msg) {
+            if (_msgs == null) {
+                _msgs = new List<ClientMsg>();
+                ExecuteMsg(msg);//第一次是同步服务器的逻辑帧，要优先处理
+            }
             bool alreadyReceived = false;
             for (int index = 0; index < _msgs.Count; index++) {
                 if (_msgs[index].SendId != msg.SendId) continue;
@@ -50,9 +68,16 @@ namespace Assets.Scripts.FrameSync {
                 break;
             }
             if (!alreadyReceived) {
-                Debug.LogFormat("new msg add ,{0}", msg.SendId);
+                Debug.LogFormat("new msg add ,{0}, operationCode {1}", msg.SendId, msg.OperationCode);
                 _msgs.Add(msg);
             }
+        }
+        
+        
+        private void InitDataStructures() {
+            _serverCallbacks.Add(ClientMsg.SERVER_FRAME, OnServerFrameGot);
+            _serverCallbacks.Add(ClientMsg.CREATION, OnUnitCreation);
+            _serverCallbacks.Add(ClientMsg.MOVE, OnUnitMove);
         }
 
         private void OnNewDataReceived(string obj) {
@@ -63,44 +88,57 @@ namespace Assets.Scripts.FrameSync {
             }
         }
 
+        private void OnServerFrameGot(ClientMsg msg) {
+            _currentFrame = msg.FrameId;
+            Debug.LogFormat("OnServerFrameGot, frameId {0}", msg.FrameId);
+            StartCoroutine(StartFrameSync());
+        }
+
+        private void OnUnitCreation(ClientMsg msg) {
+            bool isMe = msg.Guid == _guid;
+            Send(EntityConsts.Message.CREATE_UNIT, new Hashtable() {
+                {"unitId", int.Parse(msg.OperationInfoStr)},
+                {"guid", msg.Guid},
+                {"isMe", isMe}
+            });
+        }
+
+        private void OnUnitMove(ClientMsg msg) {
+            Send(EntityConsts.Message.UNIT_MOVE, new Hashtable() {
+                {"action", msg.OperationInfoStr},
+                {"guid", msg.Guid},
+            });
+        }
+        
+
         private void ExecuteMsg(ClientMsg msg) {
             //Debug.LogFormat("msg is {0}, guid {1}", msg.OperationCode, msg.Guid);
-            switch (msg.OperationCode){
-                case ClientMsg.CREATION:
-                    bool isMe = msg.Guid == _guid;
-                    Send(EntityConsts.Message.CREATE_UNIT, new Hashtable() {
-                        {"unitId", int.Parse(msg.OperationInfoStr)},
-                        {"guid", msg.Guid},
-                        {"isMe", isMe}
-                    });
-                    break;
-                case ClientMsg.MOVE:
-                    Send(EntityConsts.Message.UNIT_MOVE, new Hashtable() {
-                        {"action", msg.OperationInfoStr},
-                        {"guid", msg.Guid},
-                    });
-                    break;
-                default:
-                    break;
+            System.Action<ClientMsg> callback;
+            if (_serverCallbacks.TryGetValue(msg.OperationCode, out callback)) {
+                callback(msg);
             }
         }
 
         private void SendUnityCreated(Hashtable obj) {
             Debug.LogFormat("Send Unity Create");
-            SendOperation(new UnitCreationMsg());
+            SendClientMsg(new UnitCreationMsg());
         }
 
-        private void Update() {
-            _elapsedTime += Time.unscaledDeltaTime;
-            if (_elapsedTime >= SYNC_MS / 1000f) {
-                FixTick();
-                _elapsedTime = 0f;
+        private IEnumerator StartFrameSync() {
+            _elapsedTime = 0;
+            while (true) {
+                yield return null;
+                _elapsedTime += Time.unscaledDeltaTime;
+                if (_elapsedTime >= SYNC_MS / 1000f) {
+                    FixTick();
+                    _elapsedTime = 0f;
+                }
             }
         }
 
         private void FixTick() {
             _currentFrame++;//进行一帧
-//            Debug.LogFormat("当前帧,{0}", _currentFrame);
+ //           Debug.LogFormat("当前帧,{0}", _currentFrame);
             ExecuteOperations();
         }
 
@@ -120,10 +158,9 @@ namespace Assets.Scripts.FrameSync {
         /// <summary>
         /// 发送本机操作
         /// </summary>
-        private void SendOperation(ClientMsg data)
-        {
+        private void SendClientMsg(ClientMsg data) {
+            Debug.LogFormat("SendClientMsg, operation {0}, frame at {1}", data.OperationCode, data.FrameId);
             data.Guid = _guid;
-            data.FrameId = _currentFrame;
             MyUDPClient.SendMessage(data);
         }
     }

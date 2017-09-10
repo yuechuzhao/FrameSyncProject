@@ -10,8 +10,8 @@ namespace Assets.Scripts.FrameSync {
         }
 
         protected override void OnCreate(object param = null) {
-
-            foreach (Transform childButton in transform) {
+            Transform moveRoot = transform.Find("Move");
+            foreach (Transform childButton in moveRoot) {
                 var button = childButton.GetComponent<Button>();
                 button.onClick.AddListener(() => {
                     string buttonName = button.gameObject.name;

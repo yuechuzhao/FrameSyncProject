@@ -5,6 +5,10 @@ using DG.Tweening;
 using UnityEngine;
 
 namespace Assets.Scripts.FrameSync {
+    public class UnitData {
+        public int Hp = 100;
+        public int Attack = 20;
+    }
 
     public class Unit : EntityBase {
 
@@ -65,7 +69,7 @@ namespace Assets.Scripts.FrameSync {
         public void Init(bool isMe, int unitId, string guid) {
             IsMe = isMe;
             _guid = guid;
-            transform.position = Vector3.right * unitId; 
+            transform.position = Vector3.right * unitId * 4; 
         }
     }
 }

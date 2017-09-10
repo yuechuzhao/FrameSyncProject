@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -15,6 +16,7 @@ namespace Assets.Scripts.UDPClient {
 
         private static UdpClient _client;
         private static string _receivedMsg;
+        private static Queue<string> _receiveMsgs = new Queue<string>();
 
         private static Thread _recThread;
 
@@ -62,16 +64,19 @@ namespace Assets.Scripts.UDPClient {
             {
                 byte[] buffer = _client.Receive(ref listenEndPoint);//接收数据报
 
+                // TODO 修改成pb
                 //UnityEngine.Debug.LogFormat("received from {0}, {1}", listenEndPoint.Address, listenEndPoint.Port);
-                _receivedMsg = System.Text.Encoding.Default.GetString( buffer );
+                var msg = System.Text.Encoding.Default.GetString( buffer );
+                _receiveMsgs.Enqueue(msg);
             }
         }
 
         private void Update() {
-            if (string.IsNullOrEmpty(_receivedMsg)) return;
-            if (OnNewDataReceived != null) {
-                OnNewDataReceived(_receivedMsg);
-                _receivedMsg = null;
+            if (OnNewDataReceived == null) return;
+            while (_receiveMsgs.Count > 0) {
+                var msg = _receiveMsgs.Dequeue();
+                Debug.LogFormat("msg is {0}", msg);
+                OnNewDataReceived(msg);
             }
         }
 
