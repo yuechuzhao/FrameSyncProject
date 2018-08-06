@@ -1,7 +1,7 @@
 from socketserver import BaseRequestHandler, UDPServer
 from time import ctime, sleep
 import threading
-
+from enum import Enum
 
 class UnitClient:
     def __init__(self, guid, addr):
@@ -49,6 +49,15 @@ class FrameManager:
     def start_step(self):
         t = threading.Thread(target=self.step_frame)
         t.start()
+
+
+
+
+class State(Enum):
+    waiting = 0
+    prepare = 1
+    battle = 2
+    settle = 3
 
 
 class BattleManager:
@@ -107,6 +116,7 @@ class BattleManager:
     def send_all(self, data, send_func):
         def send_to_client(client):
             send_func(client.address, [data])
+
         client_manager.broadcast_to_clients(send_to_client)
 
     def on_request_frame(self, data, send_func):
@@ -201,11 +211,12 @@ class TimeHandler(BaseRequestHandler):
         #     return
         # client_manager.broadcast_to_clients(send_func)
 
-        #for address in all_clients:
+        # for address in all_clients:
         #    for send_msg in send_msgs:
         #        send_msg = send_msg.encode()
         #        print("send msg", send_msg)
         #        sock.sendto(send_msg, address)
+
 
 battle_manager = BattleManager()
 queue_manager = QueueManager()
@@ -215,6 +226,8 @@ frame_manager = FrameManager()
 if __name__ == '__main__':
     from socketserver import ThreadingUDPServer
 
+    from test_package.demo import test_import
+    test_import()
     frame_manager.start_step()
     server = ThreadingUDPServer(('', 20000), TimeHandler)
     server.serve_forever()
